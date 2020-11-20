@@ -8,6 +8,7 @@
 #include <QProgressBar>
 
 #include "FileNameTreeWidgetItem.h"
+#include "FileCopier.h"
 
 #include "taglib/fileref.h"
 #include "taglib/tag.h"
@@ -153,25 +154,8 @@ void MainWindow::onPushButtonCopyClicked()
         dir.mkdir(dstFolder);
     }
 
-    QThread* thread = new QThread();
-    QWidget* widget = new QWidget();
-    QHBoxLayout* layout = new QHBoxLayout();
-    QProgressBar* progressBar = new QProgressBar();
-
-    layout->addWidget(progressBar);
-    widget->setLayout(layout);
-
-    progressBar->setMinimum(0);
-    progressBar->setMaximum(ui->treeWidgetFileName->topLevelItemCount());
-
-    thread->start();
-    widget->moveToThread(thread);
-
-    widget->setAttribute(Qt::WA_DeleteOnClose);
-    widget->show();
-
-    connect(widget, SIGNAL(destroyed()), thread, SLOT(deleteLater()));
-
+    QList<CopyInfo> copyInfos;
+    CopyInfo copyInfo;
     for( int i = 0; i < ui->treeWidgetFileName->topLevelItemCount(); i++ )
     {
         const FileNameTreeWidgetItem* item = static_cast<FileNameTreeWidgetItem*>(ui->treeWidgetFileName->topLevelItem(i));
@@ -179,9 +163,46 @@ void MainWindow::onPushButtonCopyClicked()
 
         const QFileInfo &fileInfo = item->fileInfo();
 
-        QFile::copy(fileInfo.absoluteFilePath(), QString("%1/%2.%3").arg(dstFolder).arg(item->renamedFileName()).arg(fileInfo.suffix()));
+        copyInfo.Src = fileInfo.absoluteFilePath();
+        copyInfo.Dst = QString("%1/%2.%3").arg(dstFolder).arg(item->renamedFileName()).arg(fileInfo.suffix());
 
-        progressBar->setValue(i+1);
+        copyInfos << copyInfo;
     }
+
+    QDialog* dialogTemp = new QDialog();
+
+    QProgressBar* progressBar = new QProgressBar();
+    progressBar->setAlignment(Qt::AlignHCenter|Qt::AlignVCenter);
+
+    dialogTemp->setLayout(new QVBoxLayout());
+    dialogTemp->layout()->addWidget(progressBar);
+    dialogTemp->adjustSize();
+    dialogTemp->resize(dialogTemp->width()*2, dialogTemp->height());
+
+    dialogTemp->setWindowTitle(tr("Copying..."));
+    dialogTemp->move(this->pos()+this->rect().center()-dialogTemp->rect().center());
+    dialogTemp->setMaximumSize(dialogTemp->size());
+
+    QThread* thread = new QThread();
+    FileCopier* copier = new FileCopier();
+    copier->moveToThread(thread);
+
+    copier->setCopyInfos(copyInfos);
+
+    connect(thread, SIGNAL(started()), copier, SLOT(startCopy()));
+    connect(copier, SIGNAL(changedProgressRange(int,int)), progressBar, SLOT(setRange(int,int)));
+    connect(copier, SIGNAL(changedProgressValue(int)), progressBar, SLOT(setValue(int)));
+    connect(copier, SIGNAL(finished()), dialogTemp, SLOT(accept()));
+
+    thread->start();
+
+    dialogTemp->exec();
+
+    thread->quit();
+    thread->wait(10000);
+
+    delete copier;
+    delete thread;
+    delete dialogTemp;
 }
 
