@@ -15,18 +15,14 @@ public:
 
     const QFileInfo &fileInfo() const { return m_fileInfo; }
     inline void setFileInfo(const QFileInfo &info) { m_fileInfo = info; }
-    inline void setArtist(const QString &artist) { m_artist = artist; }
-    inline void setTitle(const QString &title) { m_title = title; }
-    inline bool isValid() const { return (m_fileInfo.isFile() && hasArtist() && hasTitle()); }
-    inline bool hasArtist() const { return !m_artist.isEmpty(); }
-    inline bool hasTitle() const { return !m_title.isEmpty(); }
+    bool isValid() const;
 
     QString renamedFileName() const;
+    void setRenamedFileName(const QString &fileName);
 
 private:
     QFileInfo m_fileInfo;
-    QString m_artist;
-    QString m_title;
+    QString m_renamedFileName;
 };
 
 #endif // FILENAMETREEWIDGETITEM_H

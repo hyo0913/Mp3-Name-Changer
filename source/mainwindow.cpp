@@ -138,8 +138,7 @@ void MainWindow::onPushButtonRenameClicked()
             title = codecEucKr->toUnicode(titleByteVectorEucKr.data(), titleByteVectorEucKr.size());
         }
 
-        item->setArtist(artist);
-        item->setTitle(title);
+        item->setRenamedFileName(QString("%1 - %2.%3").arg(artist).arg(title).arg(info.suffix()));
     }
 
     ui->treeWidgetFileName->update();
@@ -164,7 +163,7 @@ void MainWindow::onPushButtonCopyClicked()
         const QFileInfo &fileInfo = item->fileInfo();
 
         copyInfo.Src = fileInfo.absoluteFilePath();
-        copyInfo.Dst = QString("%1/%2.%3").arg(dstFolder).arg(item->renamedFileName()).arg(fileInfo.suffix());
+        copyInfo.Dst = QString("%1/%2").arg(dstFolder).arg(item->renamedFileName());
 
         copyInfos << copyInfo;
     }

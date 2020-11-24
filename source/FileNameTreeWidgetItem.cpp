@@ -31,7 +31,25 @@ QVariant FileNameTreeWidgetItem::data(int column, int role) const
     return result;
 }
 
+bool FileNameTreeWidgetItem::isValid() const
+{
+    return !m_renamedFileName.isEmpty();
+}
+
 QString FileNameTreeWidgetItem::renamedFileName() const
 {
-    return QString("%1 - %2").arg(m_artist).arg(m_title);
+    return m_renamedFileName;
+}
+
+void FileNameTreeWidgetItem::setRenamedFileName(const QString &fileName)
+{
+    m_renamedFileName = fileName;
+
+    for( int i = 0; i < m_renamedFileName.length(); i++ ) {
+        QChar temp = m_renamedFileName.at(i);
+        if( temp == '<' || temp == '>' || temp == ':' || temp == '"' || temp == '/' || temp == '\\' ||
+            temp == '|' || temp == '?' || temp == '*') {
+            m_renamedFileName.replace(i, 1, '_');
+        }
+    }
 }
